@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from datetime import time
 from urllib.parse import quote
@@ -21,24 +22,18 @@ def youtube_link(movie_name):
 def ask_claude(prompt):
     msg = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=300,
+        max_tokens=350,
         messages=[{"role": "user", "content": prompt}],
-        system="أنت خبير سينمائي. اقترح فيلماً بشكل مختصر: الاسم بالعربي والإنجليزي، السنة، التقييم، وسبب المشاهدة في سطرين. في آخر ردك اكتب فقط: MOVIE_NAME: ثم اسم الفيلم بالإنجليزي.",
+        system="أنت خبير سينمائي. اقترح فيلماً بالعربية مع إيموجي. اكتب اسم الفيلم الإنجليزي بين قوسين مربعين هكذا [Movie Name] في أول سطر.",
     )
     return msg.content[0].text
 
 def format_reply(raw):
-    lines = raw.strip().split("\n")
-    movie_name = ""
-    clean_lines = []
-    for line in lines:
-        if line.startswith("MOVIE_NAME:"):
-            movie_name = line.replace("MOVIE_NAME:", "").strip()
-        else:
-            clean_lines.append(line)
-    text = "\n".join(clean_lines).strip()
-    if movie_name:
-        text += f"\n\n🎬 تريلر مترجم: {youtube_link(movie_name)}"
+    match = re.search(r'\[(.+?)\]', raw)
+    text = raw.strip()
+    if match:
+        movie_name = match.group(1)
+        text += f"\n\n🎬 تريلر: {youtube_link(movie_name)}"
     return text
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
