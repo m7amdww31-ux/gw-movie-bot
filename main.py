@@ -18,6 +18,14 @@ log = logging.getLogger(__name__)
 client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
 
 AD = """
+#أفلام #مسلسلات #أنمي #اقتراح_فيلم #فيلم_اليوم #سينما #ترفيه #GWPlus #TigerTV #اشتراكات"""
+
+CONTACT_KEYBOARD = InlineKeyboardMarkup([[
+    InlineKeyboardButton("📱 واتساب", url="https://wa.me/966569261930"),
+    InlineKeyboardButton("📸 انستا", url="https://www.instagram.com/gw.plus1"),
+]])
+
+AD_TEXT = """
 ──────────────────
 🎯 اشتركات تايقر تي في - Tiger TV 🎯
 🔹 من متجر GW | أفضل منصة ترفيهية تجمع كل شيء في مكان واحد!
@@ -39,14 +47,7 @@ AD = """
 
 ✨ ما لقيت فلمك أو مسلسلك المفضل؟
 اطلبه مباشرة وسنضيفه لك خلال وقت قصير!
-
-📩 اشترك الآن وادخل عالم الترفيه بلا حدود!
-📱 واتساب: https://wa.me/966569261930
-📸 انستا: https://www.instagram.com/gw.plus1
-
-#أفلام #مسلسلات #أنمي #اقتراح_فيلم #فيلم_اليوم #سينما #ترفيه #GWPlus #TigerTV #اشتراكات
-──────────────────
-"""
+──────────────────"""
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -89,6 +90,14 @@ def format_reply(raw):
     text += AD
     return text
 
+async def send_with_ad(bot_or_update, text, chat_id=None, reply_markup=None):
+    if chat_id:
+        await bot_or_update.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
+        await bot_or_update.send_message(chat_id=chat_id, text=AD_TEXT, reply_markup=CONTACT_KEYBOARD)
+    else:
+        await bot_or_update.message.reply_text(text, reply_markup=reply_markup)
+        await bot_or_update.message.reply_text(AD_TEXT, reply_markup=CONTACT_KEYBOARD)
+
 async def handle_rating(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -106,24 +115,25 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "/mood حزين – حسب مزاجك\n"
         "/similar Inception – أعمال مشابهة\n"
         "/top – أفضل 3 أفلام\n"
-        "/publish – نشر في القناة",
+        "/publish – نشر فيلم اليوم في القناة\n"
+        "/postgenre رعب – نشر حسب النوع في القناة",
         parse_mode="Markdown"
     )
 
 async def cmd_movie(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
     text = format_reply(ask_claude("اقترح فيلماً مميزاً يستحق المشاهدة."))
-    await update.message.reply_text(text, reply_markup=rating_keyboard())
+    await send_with_ad(update, text, reply_markup=rating_keyboard())
 
 async def cmd_series(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
     text = format_reply(ask_claude("اقترح مسلسلاً مميزاً يستحق المشاهدة."))
-    await update.message.reply_text(text, reply_markup=rating_keyboard())
+    await send_with_ad(update, text, reply_markup=rating_keyboard())
 
 async def cmd_anime(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
     text = format_reply(ask_claude("اقترح أنمي مميزاً يستحق المشاهدة."))
-    await update.message.reply_text(text, reply_markup=rating_keyboard())
+    await send_with_ad(update, text, reply_markup=rating_keyboard())
 
 async def cmd_genre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     args = " ".join(ctx.args).strip()
@@ -132,7 +142,7 @@ async def cmd_genre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("⏳ ثواني...")
     text = format_reply(ask_claude(f"اقترح فيلماً من نوع '{args}'."))
-    await update.message.reply_text(text, reply_markup=rating_keyboard())
+    await send_with_ad(update, text, reply_markup=rating_keyboard())
 
 async def cmd_mood(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     args = " ".join(ctx.args).strip()
@@ -141,7 +151,7 @@ async def cmd_mood(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("⏳ ثواني...")
     text = format_reply(ask_claude(f"اقترح فيلماً مناسباً لشخص مزاجه '{args}'."))
-    await update.message.reply_text(text, reply_markup=rating_keyboard())
+    await send_with_ad(update, text, reply_markup=rating_keyboard())
 
 async def cmd_similar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     args = " ".join(ctx.args).strip()
@@ -150,42 +160,49 @@ async def cmd_similar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text("⏳ ثواني...")
     text = format_reply(ask_claude(f"اقترح 3 أفلام مشابهة لفيلم '{args}'."))
-    await update.message.reply_text(text, reply_markup=rating_keyboard())
+    await send_with_ad(update, text, reply_markup=rating_keyboard())
 
 async def cmd_top(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
     text = format_reply(ask_claude("اقترح أفضل 3 أفلام من أنواع مختلفة."))
-    await update.message.reply_text(text, reply_markup=rating_keyboard())
+    await send_with_ad(update, text, reply_markup=rating_keyboard())
 
 async def cmd_publish(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     text = format_reply(ask_claude("اقترح فيلم اليوم لقناة تيليغرام. ابدأ بـ 🎬 فيلم اليوم"))
-    await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text)
-    await update.message.reply_text("✅ تم النشر!")
+    await send_with_ad(ctx.bot, text, chat_id=CHANNEL_ID)
+    await update.message.reply_text("✅ تم النشر في القناة!")
+
+async def cmd_postgenre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    args = " ".join(ctx.args).strip()
+    if not args:
+        await update.message.reply_text("اكتب النوع مثلاً: /postgenre رعب")
+        return
+    await update.message.reply_text("⏳ جاري التوليد والنشر...")
+    text = format_reply(ask_claude(f"اقترح فيلماً من نوع '{args}' لنشره في قناة تيليغرام."))
+    await send_with_ad(ctx.bot, text, chat_id=CHANNEL_ID)
+    await update.message.reply_text("✅ تم النشر في القناة!")
 
 async def daily_post(ctx: ContextTypes.DEFAULT_TYPE):
-    await ctx.bot.send_message(
-        chat_id=CHANNEL_ID,
-        text=format_reply(ask_claude("اقترح فيلم اليوم. ابدأ بـ 🎬 فيلم اليوم"))
-    )
+    text = format_reply(ask_claude("اقترح فيلم اليوم. ابدأ بـ 🎬 فيلم اليوم"))
+    await send_with_ad(ctx.bot, text, chat_id=CHANNEL_ID)
 
 async def weekly_post(ctx: ContextTypes.DEFAULT_TYPE):
-    await ctx.bot.send_message(
-        chat_id=CHANNEL_ID,
-        text=format_reply(ask_claude("اقترح أفضل 5 أفلام هذا الأسبوع. ابدأ بـ 🏆 أفضل أفلام الأسبوع"))
-    )
+    text = format_reply(ask_claude("اقترح أفضل 5 أفلام هذا الأسبوع. ابدأ بـ 🏆 أفضل أفلام الأسبوع"))
+    await send_with_ad(ctx.bot, text, chat_id=CHANNEL_ID)
 
 def main():
     threading.Thread(target=run_server, daemon=True).start()
     app = Application.builder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start",   cmd_start))
-    app.add_handler(CommandHandler("movie",   cmd_movie))
-    app.add_handler(CommandHandler("series",  cmd_series))
-    app.add_handler(CommandHandler("anime",   cmd_anime))
-    app.add_handler(CommandHandler("genre",   cmd_genre))
-    app.add_handler(CommandHandler("mood",    cmd_mood))
-    app.add_handler(CommandHandler("similar", cmd_similar))
-    app.add_handler(CommandHandler("top",     cmd_top))
-    app.add_handler(CommandHandler("publish", cmd_publish))
+    app.add_handler(CommandHandler("start",      cmd_start))
+    app.add_handler(CommandHandler("movie",      cmd_movie))
+    app.add_handler(CommandHandler("series",     cmd_series))
+    app.add_handler(CommandHandler("anime",      cmd_anime))
+    app.add_handler(CommandHandler("genre",      cmd_genre))
+    app.add_handler(CommandHandler("mood",       cmd_mood))
+    app.add_handler(CommandHandler("similar",    cmd_similar))
+    app.add_handler(CommandHandler("top",        cmd_top))
+    app.add_handler(CommandHandler("publish",    cmd_publish))
+    app.add_handler(CommandHandler("postgenre",  cmd_postgenre))
     app.add_handler(CallbackQueryHandler(handle_rating, pattern="^rate_"))
     app.job_queue.run_daily(daily_post, time=time(hour=18, minute=0))
     app.job_queue.run_daily(weekly_post, time=time(hour=20, minute=0), days=(4,))
