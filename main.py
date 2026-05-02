@@ -42,18 +42,15 @@ AD = """
 ──────────────────
 #أفلام #مسلسلات #أنمي #اقتراح_فيلم #فيلم_اليوم #سينما #ترفيه #GWPlus #TigerTV #اشتراكات"""
 
-MAIN_KEYBOARD = InlineKeyboardMarkup([[
-    InlineKeyboardButton("📱 واتساب", url="https://wa.me/966569261930"),
-    InlineKeyboardButton("📸 انستا", url="https://www.instagram.com/gw.plus1"),
-]])
-
-RATING_KEYBOARD = InlineKeyboardMarkup([[
-    InlineKeyboardButton("⭐", callback_data="rate_1"),
-    InlineKeyboardButton("⭐⭐", callback_data="rate_2"),
-    InlineKeyboardButton("⭐⭐⭐", callback_data="rate_3"),
-    InlineKeyboardButton("⭐⭐⭐⭐", callback_data="rate_4"),
-    InlineKeyboardButton("⭐⭐⭐⭐⭐", callback_data="rate_5"),
-]])
+MAIN_KEYBOARD = InlineKeyboardMarkup([
+    [
+        InlineKeyboardButton("📱 واتساب", url="https://wa.me/966569261930"),
+        InlineKeyboardButton("📸 انستا", url="https://www.instagram.com/gw.plus1"),
+    ],
+    [
+        InlineKeyboardButton("📢 اشترك في القناة", url="https://t.me/GWPlus1"),
+    ]
+])
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
