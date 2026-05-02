@@ -1,6 +1,7 @@
 import os
 import logging
 from datetime import time
+from urllib.parse import quote
 import anthropic
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -13,14 +14,32 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
 
+def youtube_link(movie_name):
+    query = quote(f"{movie_name} trailer مترجم")
+    return f"https://www.youtube.com/results?search_query={query}"
+
 def ask_claude(prompt):
     msg = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=300,
         messages=[{"role": "user", "content": prompt}],
-        system="أنت خبير سينمائي. اقترح فيلماً بشكل مختصر وجذاب: الاسم، السنة، التقييم، وسبب المشاهدة في 3 أسطر فقط. استخدم إيموجي واكتب بالعربية.",
+        system="أنت خبير سينمائي. اقترح فيلماً بشكل مختصر: الاسم بالعربي والإنجليزي، السنة، التقييم، وسبب المشاهدة في سطرين. في آخر ردك اكتب فقط: MOVIE_NAME: ثم اسم الفيلم بالإنجليزي.",
     )
     return msg.content[0].text
+
+def format_reply(raw):
+    lines = raw.strip().split("\n")
+    movie_name = ""
+    clean_lines = []
+    for line in lines:
+        if line.startswith("MOVIE_NAME:"):
+            movie_name = line.replace("MOVIE_NAME:", "").strip()
+        else:
+            clean_lines.append(line)
+    text = "\n".join(clean_lines).strip()
+    if movie_name:
+        text += f"\n\n🎬 تريلر مترجم: {youtube_link(movie_name)}"
+    return text
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -34,7 +53,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_movie(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
-    await update.message.reply_text(ask_claude("اقترح فيلماً مميزاً يستحق المشاهدة."))
+    await update.message.reply_text(format_reply(ask_claude("اقترح فيلماً مميزاً يستحق المشاهدة.")))
 
 async def cmd_genre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     args = " ".join(ctx.args).strip()
@@ -42,21 +61,21 @@ async def cmd_genre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("اكتب النوع مثلاً: /genre كوميدي")
         return
     await update.message.reply_text("⏳ ثواني...")
-    await update.message.reply_text(ask_claude(f"اقترح فيلماً من نوع '{args}'."))
+    await update.message.reply_text(format_reply(ask_claude(f"اقترح فيلماً من نوع '{args}'.")))
 
 async def cmd_top(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
-    await update.message.reply_text(ask_claude("اقترح أفضل 3 أفلام من أنواع مختلفة بشكل مختصر."))
+    await update.message.reply_text(format_reply(ask_claude("اقترح أفضل 3 أفلام من أنواع مختلفة.")))
 
 async def cmd_publish(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    text = ask_claude("اقترح فيلم اليوم لقناة تيليغرام. ابدأ بـ 🎬 فيلم اليوم")
+    text = format_reply(ask_claude("اقترح فيلم اليوم لقناة تيليغرام. ابدأ بـ 🎬 فيلم اليوم"))
     await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text)
     await update.message.reply_text("✅ تم النشر!")
 
 async def daily_post(ctx: ContextTypes.DEFAULT_TYPE):
     await ctx.bot.send_message(
         chat_id=CHANNEL_ID,
-        text=ask_claude("اقترح فيلم اليوم. ابدأ بـ 🎬 فيلم اليوم")
+        text=format_reply(ask_claude("اقترح فيلم اليوم. ابدأ بـ 🎬 فيلم اليوم"))
     )
 
 def main():
