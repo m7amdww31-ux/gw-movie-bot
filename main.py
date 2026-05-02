@@ -79,7 +79,7 @@ def rating_keyboard():
         InlineKeyboardButton("⭐⭐⭐⭐⭐", callback_data="rate_5"),
     ]])
 
-def format_reply(raw, show_rating=True):
+def format_reply(raw):
     match = re.search(r'\[(.+?)\]', raw)
     text = raw.strip()
     if match:
@@ -102,7 +102,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "/anime – أنمي مميز\n"
         "/genre رعب – حسب النوع\n"
         "/mood حزين – حسب مزاجك\n"
-        "/similar اسم الفيلم – أعمال مشابهة\n"
+        "/similar Inception – أعمال مشابهة\n"
         "/top – أفضل 3 أفلام\n"
         "/publish – نشر في القناة",
         parse_mode="Markdown"
@@ -169,7 +169,7 @@ async def daily_post(ctx: ContextTypes.DEFAULT_TYPE):
 async def weekly_post(ctx: ContextTypes.DEFAULT_TYPE):
     await ctx.bot.send_message(
         chat_id=CHANNEL_ID,
-        text=format_reply(ask_claude("اقترح قائمة أفضل 5 أفلام هذا الأسبوع. ابدأ بـ 🏆 أفضل أفلام الأسبوع"))
+        text=format_reply(ask_claude("اقترح أفضل 5 أفلام هذا الأسبوع. ابدأ بـ 🏆 أفضل أفلام الأسبوع"))
     )
 
 def main():
