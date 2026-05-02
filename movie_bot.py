@@ -15,6 +15,35 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
 
+AD = """
+──────────────────
+🎯 اشتركات تايقر تي في - Tiger TV 🎯
+🔹 من متجر GW | أفضل منصة ترفيهية تجمع كل شيء في مكان واحد!
+
+💰 الأسعار:
+📅 شهر واحد: 29 ريال
+📅 3 أشهر: 49 ريال
+📅 6 أشهر: 70 ريال
+📅 سنة كاملة: 99 ريال
+
+🎥 المميزات:
+✅ جميع القنوات العربية والعالمية
+✅ أحدث الأفلام والمسلسلات
+✅ بث مباشر للمباريات بجودة عالية
+✅ قسم خاص للأنمي والكورسات
+✅ دعم فني متواصل
+✅ واجهة سهلة الاستخدام
+✅ متوافق مع جميع الأجهزة
+
+✨ ما لقيت فلمك أو مسلسلك المفضل؟
+اطلبه مباشرة وسنضيفه لك خلال وقت قصير!
+
+📩 اشترك الآن وادخل عالم الترفيه بلا حدود!
+📱 واتساب: https://wa.me/966569261930
+📸 انستا: https://www.instagram.com/gw.plus1
+──────────────────
+"""
+
 def youtube_link(movie_name):
     query = quote(f"{movie_name} trailer مترجم")
     return f"https://www.youtube.com/results?search_query={query}"
@@ -34,6 +63,7 @@ def format_reply(raw):
     if match:
         movie_name = match.group(1)
         text += f"\n\n🎬 تريلر: {youtube_link(movie_name)}"
+    text += AD
     return text
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
