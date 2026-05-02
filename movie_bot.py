@@ -1,8 +1,10 @@
 import os
 import re
 import logging
+import threading
 from datetime import time
 from urllib.parse import quote
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import anthropic
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -43,6 +45,18 @@ AD = """
 📸 انستا: https://www.instagram.com/gw.plus1
 ──────────────────
 """
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+    def log_message(self, *args):
+        pass
+
+def run_server():
+    port = int(os.getenv("PORT", 8080))
+    HTTPServer(("0.0.0.0", port), HealthHandler).serve_forever()
 
 def youtube_link(movie_name):
     query = quote(f"{movie_name} trailer مترجم")
@@ -104,6 +118,7 @@ async def daily_post(ctx: ContextTypes.DEFAULT_TYPE):
     )
 
 def main():
+    threading.Thread(target=run_server, daemon=True).start()
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start",   cmd_start))
     app.add_handler(CommandHandler("movie",   cmd_movie))
