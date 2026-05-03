@@ -72,7 +72,7 @@ def ask_claude(prompt):
         model="claude-haiku-4-5-20251001",
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}],
-        system="أنت خبير سينمائي. اقترح بالعربية مع إيموجي. اكتب اسم العمل الإنجليزي بين قوسين مربعين [Name] في أول سطر.",
+        system="أنت خبير سينمائي. اقترح فيلماً بالعربية مع إيموجي. اكتب اسم العمل الإنجليزي بين قوسين مربعين [Name] في أول سطر. لا تضيف نصائح أو أسئلة أو تعليقات إضافية بعد الاقتراح.",
     )
     return msg.content[0].text
 
@@ -168,8 +168,8 @@ async def cmd_postgenre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text, reply_markup=MAIN_KEYBOARD)
     await update.message.reply_text("✅ تم النشر في القناة!")
 
-async def daily_post(ctx: ContextTypes.DEFAULT_TYPE):
-    text = format_reply(ask_claude("اقترح فيلم اليوم. ابدأ بـ 🎬 فيلم اليوم"))
+async def auto_post(ctx: ContextTypes.DEFAULT_TYPE):
+    text = format_reply(ask_claude("اقترح فيلماً أو مسلسلاً مميزاً بشكل عشوائي."))
     await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text, reply_markup=MAIN_KEYBOARD)
 
 async def weekly_post(ctx: ContextTypes.DEFAULT_TYPE):
@@ -190,7 +190,7 @@ def main():
     app.add_handler(CommandHandler("publish",    cmd_publish))
     app.add_handler(CommandHandler("postgenre",  cmd_postgenre))
     app.add_handler(CallbackQueryHandler(handle_rating, pattern="^rate_"))
-    app.job_queue.run_daily(daily_post, time=time(hour=18, minute=0))
+    app.job_queue.run_repeating(auto_post, interval=7200, first=10)
     app.job_queue.run_daily(weekly_post, time=time(hour=20, minute=0), days=(4,))
     log.info("🤖 البوت يعمل...")
     app.run_polling(drop_pending_updates=True)
