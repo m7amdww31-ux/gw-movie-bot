@@ -1,3 +1,4 @@
+```python
 import os
 import re
 import logging
@@ -16,6 +17,9 @@ CHANNEL_ID     = os.getenv("CHANNEL_ID", "")
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+
+# قائمة الأفلام المقترحة سابقاً
+posted_movies = set()
 
 AD = """
 ──────────────────
@@ -81,6 +85,13 @@ def ask_claude(prompt):
     )
     return msg.content[0].text
 
+def ask_claude_new(prompt, exclude):
+    exclude_text = "، ".join(list(exclude)[-20:]) if exclude else ""
+    full_prompt = prompt
+    if exclude_text:
+        full_prompt += f" لا تقترح أياً من هذه الأفلام التي اقترحناها سابقاً: {exclude_text}"
+    return ask_claude(full_prompt)
+
 def format_reply(raw):
     match = re.search(r'\[(.+?)\]', raw)
     text = raw.strip()
@@ -112,17 +123,23 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_movie(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
-    text, movie_name = format_reply(ask_claude("اقترح فيلماً مميزاً يستحق المشاهدة."))
+    text, movie_name = format_reply(ask_claude_new("اقترح فيلماً مميزاً يستحق المشاهدة.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await update.message.reply_text(text, reply_markup=make_keyboard(movie_name))
 
 async def cmd_series(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
-    text, movie_name = format_reply(ask_claude("اقترح مسلسلاً مميزاً يستحق المشاهدة."))
+    text, movie_name = format_reply(ask_claude_new("اقترح مسلسلاً مميزاً يستحق المشاهدة.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await update.message.reply_text(text, reply_markup=make_keyboard(movie_name))
 
 async def cmd_anime(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
-    text, movie_name = format_reply(ask_claude("اقترح أنمي مميزاً يستحق المشاهدة."))
+    text, movie_name = format_reply(ask_claude_new("اقترح أنمي مميزاً يستحق المشاهدة.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await update.message.reply_text(text, reply_markup=make_keyboard(movie_name))
 
 async def cmd_genre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -131,7 +148,9 @@ async def cmd_genre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("اكتب النوع مثلاً: /genre كوميدي")
         return
     await update.message.reply_text("⏳ ثواني...")
-    text, movie_name = format_reply(ask_claude(f"اقترح فيلماً من نوع '{args}'."))
+    text, movie_name = format_reply(ask_claude_new(f"اقترح فيلماً من نوع '{args}'.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await update.message.reply_text(text, reply_markup=make_keyboard(movie_name))
 
 async def cmd_mood(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -140,7 +159,9 @@ async def cmd_mood(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("اكتب مزاجك مثلاً: /mood حزين")
         return
     await update.message.reply_text("⏳ ثواني...")
-    text, movie_name = format_reply(ask_claude(f"اقترح فيلماً مناسباً لشخص مزاجه '{args}'."))
+    text, movie_name = format_reply(ask_claude_new(f"اقترح فيلماً مناسباً لشخص مزاجه '{args}'.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await update.message.reply_text(text, reply_markup=make_keyboard(movie_name))
 
 async def cmd_similar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -149,16 +170,22 @@ async def cmd_similar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("اكتب اسم الفيلم مثلاً: /similar Inception")
         return
     await update.message.reply_text("⏳ ثواني...")
-    text, movie_name = format_reply(ask_claude(f"اقترح 3 أفلام مشابهة لفيلم '{args}'."))
+    text, movie_name = format_reply(ask_claude_new(f"اقترح 3 أفلام مشابهة لفيلم '{args}'.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await update.message.reply_text(text, reply_markup=make_keyboard(movie_name))
 
 async def cmd_top(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳ ثواني...")
-    text, movie_name = format_reply(ask_claude("اقترح أفضل 3 أفلام من أنواع مختلفة."))
+    text, movie_name = format_reply(ask_claude_new("اقترح أفضل 3 أفلام من أنواع مختلفة.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await update.message.reply_text(text, reply_markup=make_keyboard(movie_name))
 
 async def cmd_publish(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    text, movie_name = format_reply(ask_claude("اقترح فيلم اليوم لقناة تيليغرام. ابدأ بـ 🎬 فيلم اليوم"))
+    text, movie_name = format_reply(ask_claude_new("اقترح فيلم اليوم لقناة تيليغرام. ابدأ بـ 🎬 فيلم اليوم", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text, reply_markup=make_keyboard(movie_name))
     await update.message.reply_text("✅ تم النشر في القناة!")
 
@@ -168,16 +195,22 @@ async def cmd_postgenre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("اكتب النوع مثلاً: /postgenre رعب")
         return
     await update.message.reply_text("⏳ جاري التوليد والنشر...")
-    text, movie_name = format_reply(ask_claude(f"اقترح فيلماً من نوع '{args}' لنشره في قناة تيليغرام."))
+    text, movie_name = format_reply(ask_claude_new(f"اقترح فيلماً من نوع '{args}' لنشره في قناة تيليغرام.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text, reply_markup=make_keyboard(movie_name))
     await update.message.reply_text("✅ تم النشر في القناة!")
 
 async def auto_post(ctx: ContextTypes.DEFAULT_TYPE):
-    text, movie_name = format_reply(ask_claude("اقترح فيلماً أو مسلسلاً مميزاً بشكل عشوائي."))
+    text, movie_name = format_reply(ask_claude_new("اقترح فيلماً أو مسلسلاً مميزاً لم يُقترح من قبل.", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text, reply_markup=make_keyboard(movie_name))
 
 async def weekly_post(ctx: ContextTypes.DEFAULT_TYPE):
-    text, movie_name = format_reply(ask_claude("اقترح أفضل 5 أفلام هذا الأسبوع. ابدأ بـ 🏆 أفضل أفلام الأسبوع"))
+    text, movie_name = format_reply(ask_claude_new("اقترح أفضل 5 أفلام هذا الأسبوع. ابدأ بـ 🏆 أفضل أفلام الأسبوع", posted_movies))
+    if movie_name:
+        posted_movies.add(movie_name)
     await ctx.bot.send_message(chat_id=CHANNEL_ID, text=text, reply_markup=make_keyboard(movie_name))
 
 def main():
@@ -201,3 +234,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
+احفظه في GitHub وقولي 👌
